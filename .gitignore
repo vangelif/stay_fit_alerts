@@ -2,3 +2,4 @@ tokens.json
 .env
 node_modules
 .vscode
+steps.md
