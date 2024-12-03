@@ -10,7 +10,7 @@ function writeDataToReadme(data) {
         day: 'numeric',
     });
 
-    let content = `## ${formattedDate} Fitness Data\n`;
+    let content = `${formattedDate} `;
 
     data.forEach((dayData) => {
         content += `- Steps: ${dayData.steps}, Calories: ${dayData.calories} kcal\n`;
