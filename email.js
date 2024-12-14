@@ -16,22 +16,28 @@ async function sendEmail(weeklyData) {
     //     day: 'numeric'   
     // });
 
-    let emailContent = `Last Week's Fitness Data:\n\n`;
+    let emailContent = '';
+
+    let topPart = '';
+    let bottomPart = '';
     let totalSteps = 0;
 
     weeklyData.forEach((dayData, index) => {
-        emailContent += `${formattedDates[index]}:\n`;
-        emailContent += `🚶 Steps - ${dayData.steps}\n🥑 Calories - ${dayData.calories} kcal\n\n`;
+        
+        bottomPart += `${formattedDates[index]}:<br>`;
+        bottomPart += `🚶 Steps - <b>${dayData.steps.toLocaleString()}</b> 🥑 Calories - ${dayData.calories.toLocaleString()} kcal<br><br>`;
         totalSteps += dayData.steps;
     });
 
     const averageSteps = totalSteps / 7;
-    emailContent += `--------------------------\n`;
 
-    emailContent += `🚶 Total Steps - ${totalSteps}\n`;
-    emailContent += `📊 Average Steps / Day - ${averageSteps.toFixed(0)}\n`;
-    emailContent += '\nKeep Walking,\nLove🤟🏽';
+    topPart = `🚀 <b>Total Steps - ${totalSteps.toLocaleString()}</b><br>`;
+    topPart += `📊 Average Steps / Day - ${averageSteps.toLocaleString()}<br>`;
+    topPart += `--------------------------------------------<br><br>`;
+    // emailContent += '\nKeep Walking,\nLove🤟🏽';
 
+    emailContent += topPart + bottomPart;
+    emailContent += '<br>Keep Walking,<br>Love🤟🏽';
     let transporter = nodemailer.createTransport({
         service: 'gmail',
         auth: {
@@ -44,7 +50,7 @@ async function sendEmail(weeklyData) {
         from: process.env.EMAIL_USER,
         to: process.env.SECONDARY_EMAIL,
         subject: `🏊🏻 Last Week\'s Fitness Data`,
-        text: emailContent,
+        html: emailContent,
     };
 
     try {
