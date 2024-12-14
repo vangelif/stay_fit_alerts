@@ -1,8 +1,10 @@
 const { google } = require('googleapis');
+const { authenticateAndGenerateTokens } = require('./token');
 
-async function fetchYesterdaySteps(oAuth2Client) {
+async function fetchLastWeekSteps(oAuth2Client) {
+
     const fitness = google.fitness({ version: 'v1', auth: oAuth2Client });
-    const { startOfDay, endOfDay } = getYesterdayTimeRange();
+    const { startOfWeek, endOfWeek } = getLastWeekTimeRange();
 
     try {
         const response = await fitness.users.dataset.aggregate({
@@ -18,8 +20,8 @@ async function fetchYesterdaySteps(oAuth2Client) {
                 }]
                 ,
                 bucketByTime: { durationMillis: 86400000 },
-                startTimeMillis: startOfDay,
-                endTimeMillis: endOfDay,
+                startTimeMillis: startOfWeek,
+                endTimeMillis: endOfWeek,
             },
         });
         const bucket = response.data.bucket;
@@ -35,20 +37,31 @@ async function fetchYesterdaySteps(oAuth2Client) {
             const cal = caloriesDataset?.point?.[0]?.value?.[0]?.fpVal || 0;
             const calories = cal.toFixed(2);
 
-            return { steps, calories };
+            return { steps, calories, date: b.startTimeMillis };
         });
         return results;
     } catch (error) {
-        console.error('Error fetching steps:', error.message);
-        throw error;
-    }
+        if (error.message.includes('invalid_grant')) {
+            console.warn('Invalid grant detected during data fetch. Reauthenticating...');
+            await authenticateAndGenerateTokens();
+            return fetchLastWeekSteps();
+        } else {
+            console.error('Error fetching steps:', error.message);
+            throw error;
+        }
 }
-
-function getYesterdayTimeRange() {
+}
+function getLastWeekTimeRange() {
     const now = new Date();
-    const startOfDay = new Date(now.getFullYear(), now.getMonth(), now.getDate() - 1).getTime();
-    const endOfDay = new Date(now.getFullYear(), now.getMonth(), now.getDate()).getTime();
-    return { startOfDay, endOfDay };
+    const endOfWeek = new Date(now.getFullYear(), now.getMonth(), now.getDate() - now.getDay());
+    endOfWeek.setHours(23, 59, 59, 999);
+
+    const startOfWeek = new Date(endOfWeek);
+    startOfWeek.setDate(startOfWeek.getDate() - 6);
+    startOfWeek.setHours(0, 0, 0, 0);
+
+
+    return { startOfWeek: startOfWeek.getTime(), endOfWeek: endOfWeek.getTime() };
 }
 
-module.exports = { fetchYesterdaySteps };
+module.exports = { fetchLastWeekSteps };

@@ -1,21 +1,35 @@
 const nodemailer = require('nodemailer');
 
-async function sendEmail(data) {
-    const yesterday = new Date();
-    yesterday.setDate(yesterday.getDate() - 1);
-    const formattedDate = yesterday.toLocaleDateString('en-US', {
-        weekday: 'long', 
-        year: 'numeric', 
-        month: 'long',   
-        day: 'numeric'   
+async function sendEmail(weeklyData) {
+    // const yesterday = new Date();
+    // yesterday.setDate(yesterday.getDate() - 1);
+
+    const formattedDates = weeklyData.map(entry => {
+        const date = new Date(parseInt(entry.date));
+        return date.toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric' });
     });
 
-    let emailContent = `Yesterday's Fitness Data (${formattedDate}):\n\n`;
+    // const formattedDate = yesterday.toLocaleDateString('en-US', {
+    //     weekday: 'long', 
+    //     year: 'numeric', 
+    //     month: 'long',   
+    //     day: 'numeric'   
+    // });
 
-    data.forEach((dayData) => {
+    let emailContent = `Last Week's Fitness Data:\n\n`;
+    let totalSteps = 0;
+
+    weeklyData.forEach((dayData, index) => {
+        emailContent += `${formattedDates[index]}:\n`;
         emailContent += `🚶 Steps - ${dayData.steps}\n🥑 Calories - ${dayData.calories} kcal\n\n`;
+        totalSteps += dayData.steps;
     });
 
+    const averageSteps = totalSteps / 7;
+    emailContent += `--------------------------\n`;
+
+    emailContent += `🚶 Total Steps - ${totalSteps}\n`;
+    emailContent += `📊 Average Steps / Day - ${averageSteps.toFixed(0)}\n`;
     emailContent += '\nKeep Walking,\nLove🤟🏽';
 
     let transporter = nodemailer.createTransport({
@@ -29,7 +43,7 @@ async function sendEmail(data) {
     const mailOptions = {
         from: process.env.EMAIL_USER,
         to: process.env.SECONDARY_EMAIL,
-        subject: `🏊🏻 Yesterday\'s Fitness Data - ${formattedDate}`,
+        subject: `🏊🏻 Last Week\'s Fitness Data`,
         text: emailContent,
     };
 
@@ -37,6 +51,7 @@ async function sendEmail(data) {
         await transporter.sendMail(mailOptions);
     } catch (error) {
         console.error('Error sending email:', error);
+        await sendErrorEmail(error.message);
     }
 }
 

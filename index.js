@@ -1,17 +1,19 @@
 require('dotenv').config();
 const { oAuth2Client, loadTokens, refreshAccessToken } = require('./token');
-const { fetchYesterdaySteps } = require('./fitness');
-const { sendEmail } = require('./email');
-const { writeDataToReadme } = require('./log');
+const { fetchLastWeekSteps } = require('./fitness');
+
+const { sendEmail, sendErrorEmail } = require('./email');
+// const { writeDataToReadme } = require('./log');
 
 (async () => {
     try {
         loadTokens();
         await refreshAccessToken();
-        const data = await fetchYesterdaySteps(oAuth2Client);
-        await sendEmail(data);
-        writeDataToReadme(data); 
+        const weeklyData = await fetchLastWeekSteps(oAuth2Client);
+        await sendEmail(weeklyData);
+        // writeDataToReadme(weeklyData); 
     } catch (error) {
         console.error('Error in execution:', error.message);
+        await sendErrorEmail(error.message);
     }
 })();
